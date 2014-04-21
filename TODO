@@ -1,4 +1,3 @@
-remove hardcoded path to images
 add a dialog to select/filter folder of pictures
 add a dialog to change:
 	- grid size
@@ -8,6 +7,6 @@ add a dialog to view Highscores (name, victories)
 log all games: game-id { id -> width x height} , players {names -> card pairs}
 add sounds from SDLx::Sound (require SDL + Alien::SDL)
 look at packer methods and try resizer handlers or let board-window not resizeable.
-fix Encoding bug
 make text i18n
 look for free redistribuable picts.
+document how images must be installed ( ./images for card's back face and ./images/XXX/* )

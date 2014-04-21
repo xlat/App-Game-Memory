@@ -9,7 +9,8 @@ WriteMakefile(
     VERSION_FROM     => 'lib/App/Game/Memory.pm',
     ABSTRACT_FROM    => 'lib/App/Game/Memory.pm',
     LICENSE          => 'Artistic_2_0',
-    PL_FILES         => {},
+    PL_FILES         => { },
+	EXE_FILES       => [ 'bin/memory.pl' ],
     MIN_PERL_VERSION => 5.10.1,
     CONFIGURE_REQUIRES => {
         'ExtUtils::MakeMaker' => 0,

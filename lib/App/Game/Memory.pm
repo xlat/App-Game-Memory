@@ -51,8 +51,15 @@ our $remaining_pairs;
 our @returned_cards;
 our $card_timer;
 
+use Encode qw(from_to);
+sub decode{ 
+	my $str = shift; 
+	from_to( $str, "utf8", "iso-8859-1" );
+	return $str;
+}
+
 sub win{
-	Prima::message("Tu as gagné");
+	Prima::message(decode "Tu as gagné");
 }
 
 sub min{
@@ -65,6 +72,9 @@ sub min{
 
 sub adjustImage{
 	my $button = shift;
+	#~ my $img = $button->image;
+	#~ say "Image: $img";
+	#~ say "imageFile: ", $img->imageFile;
 	my ($h,$w) = $button->image->size;
 	my $scale = min( W_CARD / $w , H_CARD / $h);
 	$button->imageScale( $scale );
@@ -72,7 +82,10 @@ sub adjustImage{
 
 sub card_timeout{
 	if(@returned_cards == 2){
-		$_->set( imageFile => $face_card ) for @returned_cards;
+		for(@returned_cards){
+			$_->set( imageFile => $face_card );
+			adjustImage( $_ );
+		}
 		@returned_cards = ( );
 	}
 	$card_timer->stop;
@@ -87,7 +100,7 @@ sub card_clicked{
 		#~ return;
 	}
 	if(	$self->imageFile ne $face_card){
-		Prima::message( "Tu l'a déjà retourné!" );
+		Prima::message( decode "Tu l'a déjà retourné!" );
 		return;
 	}
 	
@@ -113,7 +126,9 @@ sub start {
 	use Prima qw(Application Buttons);
 	use File::Glob qw(bsd_glob);
 	use Data::Dumper;
-	 
+	use File::HomeDir;
+	my $dist_data = File::HomeDir->my_dist_data('App-Game-Memory', {create => 1});
+	$dist_data =~ s{\\}{/}g;
 	my $width = X_CARDS * W_CARD;
 	my $height = Y_CARDS * H_CARD;
 	my $win = new Prima::MainWindow(
@@ -125,14 +140,19 @@ sub start {
 		timeout => 4_000,
 		onTick => \&card_timeout,
 	);
-	#TODO: compupte using Cwd and Basename
-	my $image_path = 'c:/dev/gits/App-Game-Memory/images/';
-	#~ my @faces_picts = glob( "$image_path/*.png" ):
-	#~ $face_card = $faces_picts[ int rand scalar @faces_picts ];
-	$face_card = $image_path . '63.png';
-	#~ my $theme = '*';	#change by 'lune' or so on...
-	my $theme = 'tux';
-	my @images = grep{ $_ !~ /\b63\.png/i } glob( "$image_path/$theme/*.*" );
+	my $image_path = $dist_data . '/images';
+	my $pictures = qr/\.(?:png|gif|bmp|jpe?g)$/i;
+	my @faces_picts = grep{ /$pictures/ } bsd_glob( "$image_path/*.*" );
+	die "No face pictures! Please install images in folder $image_path"
+		unless @faces_picts;
+	$face_card = $faces_picts[ int rand scalar @faces_picts ];
+	say "Using card's faces: $face_card" if DEBUG;
+	my $theme = '*';	#change by 'lune' or so on...
+	#~ my $theme = 'islam';
+	my @images = grep{ /$pictures/ } 
+						 bsd_glob( "$image_path/$theme/*.*" );
+	die "No images! Please install images in folder $image_path/$theme"
+		unless @images;
 	say Dumper( \@images ) if DEBUG;	
 	#~ pickup 10 images
 	say "must have ", (X_CARDS * Y_CARDS)/2, " unique picture" if DEBUG;
@@ -141,7 +161,7 @@ sub start {
 	$remaining_pairs = scalar @picts;
 	say "Have ", scalar(@picts), " picts: ", Dumper( \@picts ) if DEBUG;
 	@picts = sort { rand(3)-1 } @picts, @picts;
-	
+	say "picts: ", Dumper \@picts if DEBUG;
 	for my $x (0..X_CARDS - 1){
 		for my $y (0..Y_CARDS - 1){
 			my $card = $win -> insert( Button =>
@@ -151,17 +171,17 @@ sub start {
 				name => "card_${x}_${y}",
 				imageScale => 0.5,
 				size => [ W_CARD, H_CARD],
-				image => undef,
 				onClick => \&card_clicked,
 				color => 0xffffff,
 				text => '',
 				transparent => 0,
 				flat => 1,
+				#~ growMode => gm::Center,
 				imageFile => $face_card,
 			);
-			#TODO adjust imageScale to real image->size
 			my $img = pop @picts;
 			$card->{pict} = $img;
+			adjustImage( $card );
 			say "$x,$y => $img";
 		}
 	}
